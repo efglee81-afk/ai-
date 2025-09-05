@@ -386,4 +386,460 @@
 
         .modal-score {
             font-size: 1.3em;
-            margin-bot
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .options-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="header">
+            <h1 class="title">🎼 클래식 작곡가 맞추기</h1>
+            <p class="subtitle">음악을 듣고 작곡가를 맞춰보세요</p>
+        </div>
+
+        <div class="difficulty-container">
+            <button class="diff-btn active" data-level="easy">🎵 쉬움 (5문제)</button>
+            <button class="diff-btn" data-level="normal">🎶 보통 (8문제)</button>
+            <button class="diff-btn" data-level="hard">🎼 어려움 (10문제)</button>
+        </div>
+
+        <div class="game-info">
+            <div class="info-item">
+                <div class="info-label">문제</div>
+                <div class="info-value"><span id="currentNum">1</span>/<span id="totalNum">5</span></div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">정답</div>
+                <div class="info-value" id="correctNum">0</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">힌트</div>
+                <div class="info-value" id="hintNum">3</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">점수</div>
+                <div class="info-value" id="scoreNum">0</div>
+            </div>
+        </div>
+
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressBar"></div>
+        </div>
+
+        <div class="music-section">
+            <div class="music-title" id="musicTitle">🎵 음악을 재생해보세요</div>
+            <div class="current-piece" id="currentPiece"></div>
+            
+            <div class="music-visualizer" id="visualizer">
+                <span class="bar"></span>
+                <span class="bar"></span>
+                <span class="bar"></span>
+                <span class="bar"></span>
+                <span class="bar"></span>
+                <span class="bar"></span>
+                <span class="bar"></span>
+            </div>
+
+            <div class="music-controls">
+                <button class="control-btn" id="playBtn" onclick="playMusic()">
+                    <span>▶️</span>
+                    <span>음악 재생</span>
+                </button>
+                <button class="control-btn" id="stopBtn" onclick="stopMusic()">
+                    <span>⏹️</span>
+                    <span>정지</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="hint-box" id="hintBox">
+            <div class="hint-text" id="hintText"></div>
+        </div>
+
+        <div class="options-grid" id="optionsGrid"></div>
+
+        <div class="bottom-controls">
+            <button class="btn btn-hint" id="hintBtn" onclick="showHint()">💡 힌트</button>
+            <button class="btn btn-next" id="nextBtn" onclick="nextQuestion()">다음 →</button>
+            <button class="btn btn-reset" onclick="resetGame()">🔄 새 게임</button>
+        </div>
+    </div>
+
+    <div class="modal" id="resultModal">
+        <div class="modal-content">
+            <h2 class="modal-title">🎉 게임 완료!</h2>
+            <div class="modal-emoji" id="gradeEmoji">🏆</div>
+            <div class="modal-score">
+                최종 점수: <strong id="finalScore">0</strong>점<br>
+                정답률: <span id="accuracy">0</span>%
+            </div>
+            <div class="modal-message" id="gradeMessage">훌륭합니다!</div>
+            <button class="btn btn-reset" onclick="resetGame()">다시 도전</button>
+        </div>
+    </div>
+
+    <script>
+        const musicDB = {
+            easy: [
+                {
+                    composer: "베토벤",
+                    piece: "운명 교향곡",
+                    period: "고전-낭만",
+                    hint: "독일 작곡가, 청각을 잃었지만 위대한 작품을 남김",
+                    melody: [
+                        {note: 349, dur: 200}, {note: 349, dur: 200}, {note: 349, dur: 200}, 
+                        {note: 277, dur: 600}, {note: 311, dur: 200}, {note: 311, dur: 200},
+                        {note: 311, dur: 200}, {note: 277, dur: 600}
+                    ]
+                },
+                {
+                    composer: "모차르트",
+                    piece: "아이네 클라이네 나흐트무지크",
+                    period: "고전주의",
+                    hint: "오스트리아 천재 작곡가, 35세에 요절",
+                    melody: [
+                        {note: 392, dur: 300}, {note: 294, dur: 150}, {note: 392, dur: 300},
+                        {note: 294, dur: 150}, {note: 392, dur: 150}, {note: 294, dur: 150},
+                        {note: 392, dur: 150}, {note: 494, dur: 150}, {note: 587, dur: 400}
+                    ]
+                },
+                {
+                    composer: "바흐",
+                    piece: "G선상의 아리아",
+                    period: "바로크",
+                    hint: "음악의 아버지, 독일 바로크 시대의 거장",
+                    melody: [
+                        {note: 392, dur: 800}, {note: 440, dur: 400}, {note: 494, dur: 400},
+                        {note: 523, dur: 400}, {note: 587, dur: 800}, {note: 523, dur: 400},
+                        {note: 494, dur: 400}, {note: 440, dur: 800}
+                    ]
+                },
+                {
+                    composer: "비발디",
+                    piece: "사계 - 봄",
+                    period: "바로크",
+                    hint: "이탈리아 작곡가, 붉은 머리 사제",
+                    melody: [
+                        {note: 659, dur: 200}, {note: 587, dur: 200}, {note: 523, dur: 200},
+                        {note: 587, dur: 200}, {note: 659, dur: 200}, {note: 659, dur: 200},
+                        {note: 659, dur: 400}, {note: 587, dur: 200}, {note: 523, dur: 200}
+                    ]
+                },
+                {
+                    composer: "파헬벨",
+                    piece: "캐논 D장조",
+                    period: "바로크",
+                    hint: "독일 바로크 작곡가, 결혼식 단골곡",
+                    melody: [
+                        {note: 587, dur: 400}, {note: 494, dur: 400}, {note: 523, dur: 400},
+                        {note: 440, dur: 400}, {note: 392, dur: 400}, {note: 392, dur: 400},
+                        {note: 440, dur: 400}, {note: 523, dur: 400}
+                    ]
+                }
+            ],
+            normal: [
+                {
+                    composer: "쇼팽",
+                    piece: "녹턴 제2번",
+                    period: "낭만주의",
+                    hint: "폴란드 출신, 피아노의 시인",
+                    melody: [
+                        {note: 494, dur: 600}, {note: 523, dur: 200}, {note: 494, dur: 200},
+                        {note: 466, dur: 200}, {note: 440, dur: 400}, {note: 392, dur: 400},
+                        {note: 349, dur: 600}, {note: 392, dur: 200}
+                    ]
+                },
+                {
+                    composer: "드뷔시",
+                    piece: "달빛",
+                    period: "인상주의",
+                    hint: "프랑스 인상주의 음악의 창시자",
+                    melody: [
+                        {note: 330, dur: 600}, {note: 349, dur: 300}, {note: 392, dur: 300},
+                        {note: 440, dur: 600}, {note: 392, dur: 300}, {note: 349, dur: 300},
+                        {note: 330, dur: 800}
+                    ]
+                },
+                {
+                    composer: "브람스",
+                    piece: "헝가리 무곡 5번",
+                    period: "낭만주의",
+                    hint: "독일 작곡가, 베토벤의 계승자",
+                    melody: [
+                        {note: 440, dur: 200}, {note: 494, dur: 200}, {note: 523, dur: 200},
+                        {note: 494, dur: 200}, {note: 440, dur: 400}, {note: 392, dur: 200},
+                        {note: 440, dur: 200}, {note: 349, dur: 400}
+                    ]
+                }
+            ],
+            hard: [
+                {
+                    composer: "라흐마니노프",
+                    piece: "피아노 협주곡 2번",
+                    period: "후기낭만",
+                    hint: "러시아 작곡가, 거대한 손의 소유자",
+                    melody: [
+                        {note: 262, dur: 400}, {note: 294, dur: 400}, {note: 330, dur: 400},
+                        {note: 349, dur: 400}, {note: 392, dur: 600}, {note: 349, dur: 200},
+                        {note: 330, dur: 200}, {note: 294, dur: 600}
+                    ]
+                },
+                {
+                    composer: "사티",
+                    piece: "짐노페디 1번",
+                    period: "근현대",
+                    hint: "프랑스 작곡가, 단순미의 추구",
+                    melody: [
+                        {note: 440, dur: 1000}, {note: 440, dur: 500}, {note: 392, dur: 1000},
+                        {note: 392, dur: 500}, {note: 349, dur: 1000}, {note: 330, dur: 1000},
+                        {note: 294, dur: 1500}
+                    ]
+                }
+            ]
+        };
+
+        let gameState = {
+            difficulty: 'easy',
+            currentIndex: 0,
+            questions: [],
+            score: 0,
+            correctCount: 0,
+            hintsRemaining: 3,
+            answered: false,
+            audioContext: null,
+            isPlaying: false,
+            currentMelody: null
+        };
+
+        function init() {
+            document.querySelectorAll('.diff-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    gameState.difficulty = this.dataset.level;
+                    resetGame();
+                });
+            });
+            
+            resetGame();
+        }
+
+        function resetGame() {
+            stopMusic();
+            gameState.currentIndex = 0;
+            gameState.score = 0;
+            gameState.correctCount = 0;
+            gameState.hintsRemaining = 3;
+            gameState.answered = false;
+
+            const pool = gameState.difficulty === 'easy' ? musicDB.easy :
+                        gameState.difficulty === 'normal' ? [...musicDB.easy, ...musicDB.normal] :
+                        [...musicDB.easy, ...musicDB.normal, ...musicDB.hard];
+            
+            const count = gameState.difficulty === 'easy' ? 5 : 
+                         gameState.difficulty === 'normal' ? 8 : 10;
+            
+            gameState.questions = shuffle(pool).slice(0, count);
+
+            document.getElementById('hintBox').classList.remove('show');
+            document.getElementById('nextBtn').classList.remove('show');
+            document.getElementById('resultModal').classList.remove('show');
+            document.getElementById('hintBtn').disabled = false;
+            document.getElementById('currentPiece').textContent = '';
+
+            updateUI();
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            if (gameState.currentIndex >= gameState.questions.length) {
+                showResults();
+                return;
+            }
+
+            gameState.answered = false;
+            document.getElementById('musicTitle').textContent = '🎵 음악을 재생해보세요';
+            document.getElementById('currentPiece').textContent = '';
+            document.getElementById('hintBox').classList.remove('show');
+            document.getElementById('nextBtn').classList.remove('show');
+            document.getElementById('visualizer').classList.remove('active');
+
+            createOptions(gameState.questions[gameState.currentIndex]);
+            updateUI();
+        }
+
+        function createOptions(correct) {
+            const all = [...musicDB.easy, ...musicDB.normal, ...musicDB.hard];
+            const composers = [...new Set(all.map(m => m.composer))];
+            const wrongComposers = shuffle(composers.filter(c => c !== correct.composer)).slice(0, 3);
+            const options = shuffle([correct.composer, ...wrongComposers]);
+
+            const container = document.getElementById('optionsGrid');
+            container.innerHTML = '';
+
+            options.forEach(composer => {
+                const musicData = all.find(m => m.composer === composer);
+                const card = document.createElement('div');
+                card.className = 'option-card';
+                card.innerHTML = `
+                    <div class="card-composer">${composer}</div>
+                    <div class="card-period">${musicData.period}</div>
+                `;
+                card.onclick = () => selectAnswer(composer);
+                container.appendChild(card);
+            });
+        }
+
+        function playMusic() {
+            if (gameState.isPlaying) return;
+            
+            if (!gameState.audioContext) {
+                gameState.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            
+            const question = gameState.questions[gameState.currentIndex];
+            gameState.isPlaying = true;
+            
+            document.getElementById('visualizer').classList.add('active');
+            document.getElementById('playBtn').classList.add('playing');
+            document.getElementById('musicTitle').textContent = '🎧 음악을 듣고 작곡가를 맞춰보세요';
+            document.getElementById('currentPiece').textContent = '재생 중...';
+            
+            playMelody(question.melody);
+        }
+
+        function playMelody(melody) {
+            let time = gameState.audioContext.currentTime;
+            
+            melody.forEach(note => {
+                const osc = gameState.audioContext.createOscillator();
+                const gain = gameState.audioContext.createGain();
+                
+                osc.connect(gain);
+                gain.connect(gameState.audioContext.destination);
+                
+                osc.frequency.value = note.note;
+                osc.type = 'sine';
+                
+                gain.gain.setValueAtTime(0, time);
+                gain.gain.linearRampToValueAtTime(0.3, time + 0.02);
+                gain.gain.exponentialRampToValueAtTime(0.01, time + note.dur/1000);
+                
+                osc.start(time);
+                osc.stop(time + note.dur/1000);
+                
+                time += note.dur/1000;
+            });
+            
+            setTimeout(() => stopMusic(), time * 1000 - gameState.audioContext.currentTime * 1000);
+        }
+
+        function stopMusic() {
+            gameState.isPlaying = false;
+            document.getElementById('visualizer').classList.remove('active');
+            document.getElementById('playBtn').classList.remove('playing');
+            document.getElementById('currentPiece').textContent = '';
+        }
+
+        function selectAnswer(selected) {
+            if (gameState.answered) return;
+
+            gameState.answered = true;
+            const correct = gameState.questions[gameState.currentIndex];
+            const isCorrect = selected === correct.composer;
+
+            stopMusic();
+
+            document.querySelectorAll('.option-card').forEach(card => {
+                const composer = card.querySelector('.card-composer').textContent;
+                card.classList.add('disabled');
+                
+                if (composer === correct.composer) {
+                    card.classList.add('correct');
+                } else if (composer === selected && !isCorrect) {
+                    card.classList.add('wrong');
+                }
+            });
+
+            if (isCorrect) {
+                gameState.correctCount++;
+                gameState.score += 100 - ((3 - gameState.hintsRemaining) * 20);
+                document.getElementById('musicTitle').textContent = '✅ 정답입니다!';
+                document.getElementById('currentPiece').textContent = `${correct.composer}의 「${correct.piece}」`;
+            } else {
+                document.getElementById('musicTitle').textContent = '❌ 틀렸습니다!';
+                document.getElementById('currentPiece').textContent = `정답: ${correct.composer}의 「${correct.piece}」`;
+            }
+
+            document.getElementById('nextBtn').classList.add('show');
+            updateUI();
+        }
+
+        function showHint() {
+            if (gameState.hintsRemaining <= 0 || gameState.answered) return;
+
+            gameState.hintsRemaining--;
+            const hint = gameState.questions[gameState.currentIndex].hint;
+            
+            document.getElementById('hintText').textContent = `💡 ${hint}`;
+            document.getElementById('hintBox').classList.add('show');
+            
+            if (gameState.hintsRemaining === 0) {
+                document.getElementById('hintBtn').disabled = true;
+            }
+            
+            updateUI();
+        }
+
+        function nextQuestion() {
+            gameState.currentIndex++;
+            gameState.hintsRemaining = 3;
+            document.getElementById('hintBtn').disabled = false;
+            loadQuestion();
+        }
+
+        function updateUI() {
+            document.getElementById('currentNum').textContent = gameState.currentIndex + 1;
+            document.getElementById('totalNum').textContent = gameState.questions.length;
+            document.getElementById('correctNum').textContent = gameState.correctCount;
+            document.getElementById('hintNum').textContent = gameState.hintsRemaining;
+            document.getElementById('scoreNum').textContent = gameState.score;
+            
+            const progress = (gameState.currentIndex / gameState.questions.length) * 100;
+            document.getElementById('progressBar').style.width = progress + '%';
+        }
+
+        function showResults() {
+            const accuracy = Math.round((gameState.correctCount / gameState.questions.length) * 100);
+            
+            let emoji = '🏆', message = '완벽한 클래식 마스터!';
+            if (accuracy < 90) emoji = '🥈', message = '훌륭한 실력!';
+            if (accuracy < 70) emoji = '🥉', message = '좋은 도전!';
+            if (accuracy < 50) emoji = '💪', message = '다시 도전해보세요!';
+            
+            document.getElementById('gradeEmoji').textContent = emoji;
+            document.getElementById('finalScore').textContent = gameState.score;
+            document.getElementById('accuracy').textContent = accuracy;
+            document.getElementById('gradeMessage').textContent = message;
+            document.getElementById('resultModal').classList.add('show');
+        }
+
+        function shuffle(array) {
+            const arr = [...array];
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>
