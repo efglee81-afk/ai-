@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>클래식 작곡가 맞추기 게임</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+        }
+
+        .game-container {
+            width: 100%;
+            max-width: 900px;
+            background: white;
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .title {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .subtitle {
+            font-size: 0.95em;
+            color: #666;
+        }
+
+        .difficulty-container {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .diff-btn {
+            padding: 8px 20px;
+            border: 2px solid #ddd;
+            background: white;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.3s;
+        }
+
+        .diff-btn:hover {
+            border-color: #667eea;
+            background: #f0f0ff;
+        }
+
+        .diff-btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .game-info {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 12px;
+        }
+
+        .info-item {
+            text-align: center;
+        }
+
+        .info-label {
+            font-size: 0.8em;
+            color: #888;
+            margin-bottom: 3px;
+        }
+
+        .info-value {
+            font-size: 1.4em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 25px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            transition: width 0.5s ease;
+            width: 0%;
+        }
+
+        .music-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 25px;
+            text-align: center;
+            color: white;
+        }
+
+        .music-title {
+            font-size: 1.3em;
+            margin-bottom: 10px;
+            font-weight: 500;
+        }
+
+        .current-piece {
+            font-size: 0.9em;
+            opacity: 0.9;
+            margin-bottom: 20px;
+            min-height: 20px;
+        }
+
+        .music-visualizer {
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            height: 60px;
+            gap: 4px;
+            margin: 20px 0;
+        }
+
+        .bar {
+            width: 8px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 4px;
+            transition: all 0.3s;
+        }
+
+        .bar:nth-child(1) { height: 25px; }
+        .bar:nth-child(2) { height: 40px; }
+        .bar:nth-child(3) { height: 30px; }
+        .bar:nth-child(4) { height: 45px; }
+        .bar:nth-child(5) { height: 35px; }
+        .bar:nth-child(6) { height: 42px; }
+        .bar:nth-child(7) { height: 28px; }
+
+        .music-visualizer.active .bar {
+            background: white;
+            animation: wave 0.8s ease-in-out infinite;
+        }
+
+        .bar:nth-child(1) { animation-delay: 0s; }
+        .bar:nth-child(2) { animation-delay: 0.1s; }
+        .bar:nth-child(3) { animation-delay: 0.2s; }
+        .bar:nth-child(4) { animation-delay: 0.3s; }
+        .bar:nth-child(5) { animation-delay: 0.4s; }
+        .bar:nth-child(6) { animation-delay: 0.5s; }
+        .bar:nth-child(7) { animation-delay: 0.6s; }
+
+        @keyframes wave {
+            0%, 100% { transform: scaleY(1); }
+            50% { transform: scaleY(1.8); }
+        }
+
+        .music-controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .control-btn {
+            background: white;
+            color: #667eea;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .control-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .control-btn.playing {
+            background: #ffd93d;
+            color: #333;
+        }
+
+        .hint-box {
+            background: #fef3c7;
+            border-left: 4px solid #f59e0b;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .hint-box.show {
+            display: block;
+            animation: slideIn 0.3s;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .hint-text {
+            color: #92400e;
+            font-size: 0.95em;
+        }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .option-card {
+            background: white;
+            border: 3px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 20px 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+        }
+
+        .option-card:hover:not(.disabled) {
+            border-color: #667eea;
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.2);
+            background: #f8f8ff;
+        }
+
+        .option-card.correct {
+            background: #10b981;
+            color: white;
+            border-color: #10b981;
+            animation: correct 0.6s;
+        }
+
+        .option-card.wrong {
+            background: #ef4444;
+            color: white;
+            border-color: #ef4444;
+            animation: wrong 0.5s;
+        }
+
+        @keyframes correct {
+            50% { transform: scale(1.08); }
+        }
+
+        @keyframes wrong {
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        .option-card.disabled {
+            cursor: not-allowed;
+            opacity: 0.8;
+        }
+
+        .card-composer {
+            font-size: 1.15em;
+            font-weight: 700;
+        }
+
+        .card-period {
+            font-size: 0.75em;
+            color: #999;
+            margin-top: 5px;
+        }
+
+        .option-card.correct .card-period,
+        .option-card.wrong .card-period {
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .bottom-controls {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+        }
+
+        .btn {
+            padding: 10px 24px;
+            border: none;
+            border-radius: 25px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-hint {
+            background: #f59e0b;
+            color: white;
+        }
+
+        .btn-next {
+            background: #10b981;
+            color: white;
+            display: none;
+        }
+
+        .btn-next.show {
+            display: inline-block;
+        }
+
+        .btn-reset {
+            background: #ef4444;
+            color: white;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 35px;
+            border-radius: 20px;
+            text-align: center;
+            max-width: 450px;
+            width: 90%;
+        }
+
+        .modal-title {
+            font-size: 2em;
+            color: #667eea;
+            margin-bottom: 20px;
+        }
+
+        .modal-emoji {
+            font-size: 4em;
+            margin: 20px 0;
+        }
+
+        .modal-score {
+            font-size: 1.3em;
+            margin-bot
